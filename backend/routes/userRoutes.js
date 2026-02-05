@@ -4,8 +4,8 @@ Salasana Hashataan bcryptillä, Tallennetaan käyttäjät tauluun (löytyy route
 Käyttäjän alueet tallennetaan tauluun (TÄTÄ VOIDAAN MIETTIÄ VIEL) */
 
 const express = require("express");
-const bcrypt = require("bcrypt"); // bcrypt salasanan hashausta varten
 const pool = require("../config/db"); // MariaDB-yhteys
+const { hashPassword, comparePassword } = require("../utils/passwordUtils");
 const router = express.Router();
 
 // Käyttäjän rekisteröinti
@@ -21,7 +21,7 @@ router.post("/register", async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     // Hashataan käyttäjän salasana suojausta varten
-    const hashedPassword = await bcrypt.hash(password, 10); // Suojataan hash 10 kierroksella
+    const hashedPassword = await hashPassword(password);
 
     const connection = await pool.getConnection();
     
@@ -109,8 +109,7 @@ const users = await connection.query(
     console.log("HASH FROM DB:", user.Salasana); //Debuggia taas
 
     // Syötetty salasana verrataan tietokannan hashattuun salasanaan
-    const dbPassword = user.Salasana ? user.Salasana.trim() : "";
-    const validPassword = await bcrypt.compare(password, dbPassword);
+    const validPassword = await comparePassword(password, user.Salasana);
 
     console.log("PASSWORD MATCH:", validPassword); //Debuggia jos salis ok niin eteneepi
 

@@ -16,4 +16,4 @@ module.exports = pool;
 
 
   /* Node moduleita oli myös lisättynä, jotta homma toimii:
-  npm install react-router-dom */
+  npm install react-router-dom ja bcrypt esim! */
