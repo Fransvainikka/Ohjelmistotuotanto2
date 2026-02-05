@@ -1,4 +1,8 @@
-//lisää kommentit
+/*Täällä tiivistettynä: Käyttäjä syöttää spostin ja salasanan
+Lomake lähettää POST pyynnön osoitteeseen: http://localhost:5000/api/users/login
+Jos tiedot ei täsmää kirjautuessa tulee virheviestejä
+Jos tiedot oikein palaa käyttäjä etusivulle (Tähän vois keksiä jotain muutakin) */
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -25,8 +29,10 @@ const LoginForm = () => {
         alert("Kirjautuminen onnistui!");
         localStorage.setItem("token", data.token);
 
-        // Vie käyttäjä etusivulle
+        // Vie käyttäjä etusivulle --> tähän tulee jatkossa sitten vienti "vuokranantaja/vuokraaja" sivu
+        //tarvitsee silloin checkin käyttäjän roolista
         navigate("/");
+
       } else {
         const errorData = await response.json();
         alert(errorData.error || "Sähköposti tai salasana on virheellinen.");
@@ -37,6 +43,7 @@ const LoginForm = () => {
     }
   };
 
+  // ulkoasua täs (vaatinee muokkailua)
   return (
     <form onSubmit={handleSubmit}>
       <div>

@@ -1,4 +1,8 @@
-//kommentit
+/* Rekisteröinti: Backendi vastaanottaa frontin pyynnön
+Salasana Hashataan bcryptillä, Tallennetaan käyttäjät tauluun (löytyy router.post("/register", async (req, res))
+-> saadaan käyttäjän uusi ID. 
+Käyttäjän alueet tallennetaan tauluun (TÄTÄ VOIDAAN MIETTIÄ VIEL) */
+
 const express = require("express");
 const bcrypt = require("bcrypt"); // bcrypt salasanan hashausta varten
 const pool = require("../config/db"); // MariaDB-yhteys
@@ -13,13 +17,24 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Kaikki kentät ovat pakollisia." });
     }
 
-    // Muutetaan sähköposti pieniksi kirjaimiksi ennen tallennusta
+    // Muutetaan sähköposti pieniksi kirjaimiksi ennen tallennusta, yritän välttää sen et isot kirjaimet vaikuttas kirjautumiseen
     const cleanEmail = email.trim().toLowerCase();
 
     // Hashataan käyttäjän salasana suojausta varten
     const hashedPassword = await bcrypt.hash(password, 10); // Suojataan hash 10 kierroksella
 
     const connection = await pool.getConnection();
+    
+    // TARKISTETAAN, onko sähköposti jo käytössä
+    const existingUsers = await connection.query(
+      "SELECT * FROM kayttajat WHERE Email = ?",
+      [cleanEmail]
+    );
+
+    if (existingUsers.length > 0) {
+      connection.release();
+      return res.status(409).json({ error: "Sähköposti on jo käytössä." });
+    }
 
     // Tallennetaan käyttäjän perustiedot kayttajat-tauluun
     const result = await connection.query(
@@ -28,7 +43,7 @@ router.post("/register", async (req, res) => {
     );
     const userId = result.insertId; // Käyttäjän automaattisesti luotu ID
 
-    // Tallennetaan alueet kolmekaupunkia-tauluun
+    // Tallennetaan alueet kolmekaupunkia-tauluun (TÄMÄ VIEL KYSSÄRI)
     for (let i = 0; i < areas.length; i += 3) {
       const [kaupunki1, kaupunki2, kaupunki3] = areas.slice(i, i + 3); // Ryhmitetään alueet kolmeen kaupunkiin
       await connection.query(
@@ -52,10 +67,16 @@ router.post("/register", async (req, res) => {
   }
 });
 
+/*Kirjautuminen backend: Backend hakee tietokannasta tiedot käyttäjän sposti perusteella (asetettu pieniin kirjaimiin)
+SELECT * FROM kayttajat WHERE Email = ?
+Jos ei löydy -> Virhe
+Jos löytyy -> verrataan syötettyä salista hashattyyn salikseen (bcrypt.compare)
+--> jos nämä täsmää palautetaan käyttäjän tiedot ja token --> frontti tallentaa tokenin ja siirtyy etusivulle */
+
 // Käyttäjän kirjautuminen
 router.post("/login", async (req, res) => {
 
-  console.log("REQ BODY:", req.body); //konsoliin tarkastuksia
+  console.log("REQ BODY:", req.body); //konsoliin tarkastuksia (tukena ulossyötössä)
 
   const { email, password } = req.body;
 
@@ -76,7 +97,7 @@ const users = await connection.query(
 );
     connection.release();
 
-    console.log("DB RESULT:", users); // nyt laitettu
+    console.log("DB RESULT:", users); //Tukena vaan tarkastuksessa, mitä syöttää
 
     if (users.length === 0) {
       // Käyttäjää ei löytynyt sähköpostin perusteella
@@ -85,13 +106,13 @@ const users = await connection.query(
 
     const user = users[0];
 
-    console.log("HASH FROM DB:", user.Salasana); // nyt laitettu
+    console.log("HASH FROM DB:", user.Salasana); //Debuggia taas
 
     // Syötetty salasana verrataan tietokannan hashattuun salasanaan
     const dbPassword = user.Salasana ? user.Salasana.trim() : "";
     const validPassword = await bcrypt.compare(password, dbPassword);
 
-    console.log("PASSWORD MATCH:", validPassword); //nyt
+    console.log("PASSWORD MATCH:", validPassword); //Debuggia jos salis ok niin eteneepi
 
     if (!validPassword) {
       // Salasana ei täsmää hashin kanssa
@@ -115,7 +136,7 @@ const users = await connection.query(
   }
 });
 
-// Hae kaikki käyttäjät (TESTIÄ varten)
+/* Hae kaikki käyttäjät (TESTIÄ varten) --> poistoon lopullisessa
 router.get("/", async (req, res) => {
   console.log("GET USERS HIT");
 
@@ -131,5 +152,5 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Tietokantavirhe" });
   }
 });
-
+ */
 module.exports = router;
