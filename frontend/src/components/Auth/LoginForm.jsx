@@ -26,11 +26,21 @@ const LoginForm = () => {
 
       if (response.ok) {
         const data = await response.json(); // Vastauksen tiedot
-        alert("Kirjautuminen onnistui!");
         localStorage.setItem("token", data.token);
+        localStorage.setItem("userName", data.user.FullName);
+        localStorage.setItem("userRole", data.user.Role);
+        localStorage.setItem("userId", data.user.ID);
+        alert("Kirjautuminen onnistui!");
 
         // Vie käyttäjä etusivulle --> tähän tulee jatkossa sitten vienti "vuokranantaja/vuokraaja" sivu
-        //tarvitsee silloin checkin käyttäjän roolista
+        //tarvitsee silloin checkin käyttäjän roolista, toki nyt vähän käyty jo
+        if (data.user.Role === "vuokraaja") {
+          navigate("/tenant/dashboard");
+        } else if (data.user.Role === "vuokranantaja") {
+          navigate("/landlord/dashboard");
+        } else {
+          navigate("/");
+        }
         navigate("/");
 
       } else {
